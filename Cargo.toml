@@ -105,3 +105,6 @@ ripgrep (rg) recursively searches your current directory for a regex pattern.
 By default, ripgrep will respect your .gitignore and automatically skip hidden
 files/directories and binary files.
 """
+
+[package.metadata.wix]
+include = ["pkg/wix/main.wxs"]

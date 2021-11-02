@@ -121,6 +121,10 @@ jobs:
         override: true
         target: ${{ matrix.target }}
 
+    - name: Add cargo-wix subcommand
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      run: cargo install cargo-wix
+
     - name: Use Cross
       shell: bash
       run: |
@@ -175,6 +179,13 @@ jobs:
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
 
+    - name: Create msi with wix
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      run: |
+        installer="ripgrep-${{ needs.create-release.outputs.rg_version }}-${{ matrix.target }}.msi"
+        ${{ env.CARGO }} wix --no-build --nocapture --output "$installer" -C"-dTarget=${{ matrix.target }}"
+        echo "ASSET_INSTALLER=$installer" >> $GITHUB_ENV
+
     - name: Upload release archive
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -183,4 +194,15 @@ jobs:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ${{ env.ASSET }}
         asset_name: ${{ env.ASSET }}
+        asset_content_type: application/octet-stream
+        
+    - name: Upload release msi
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ${{ env.ASSET_INSTALLER }}
+        asset_name: ${{ env.ASSET_INSTALLER }}
         asset_content_type: application/octet-stream
