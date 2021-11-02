@@ -187,6 +187,7 @@ jobs:
 
     - name: Create msi with wix
       if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      shell: bash
       run: |
         installer="ripgrep-${{ needs.create-release.outputs.rg_version }}-${{ matrix.target }}.msi"
         ${{ env.CARGO }} wix --no-build --nocapture --output "$installer" -C"-dTarget=${{ matrix.target }}"
