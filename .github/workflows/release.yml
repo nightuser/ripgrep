@@ -16,6 +16,8 @@
 name: release
 on:
   push:
+    branches:
+    - winget
     # Enable when testing release infrastructure on a branch.
     # branches:
     # - ag/work
@@ -39,7 +41,12 @@ jobs:
           # Apparently, this is the right way to get a tag name. Really?
           #
           # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
-          echo "RG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          if [[ "$GITHUB_REF" =~ refs/tags ]]; then
+            version="${GITHUB_REF#refs/tags/}"
+          else
+            version="${GITHUB_REF#refs/heads/}-$GITHUB_SHA"
+          fi
+          echo "RG_VERSION=$version" >> $GITHUB_ENV
           echo "version is: ${{ env.RG_VERSION }}"
       - name: Create GitHub release
         id: release
