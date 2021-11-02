@@ -16,8 +16,6 @@
 name: release
 on:
   push:
-    branches:
-    - winget
     # Enable when testing release infrastructure on a branch.
     # branches:
     # - ag/work
