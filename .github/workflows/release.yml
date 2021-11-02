@@ -39,8 +39,9 @@ jobs:
           # Apparently, this is the right way to get a tag name. Really?
           #
           # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
-          echo "RG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "version is: ${{ env.RG_VERSION }}"
+          version="${GITHUB_REF#refs/tags/}"
+          echo "RG_VERSION=$version" >> $GITHUB_ENV
+          echo "version is: $version"
       - name: Create GitHub release
         id: release
         uses: actions/create-release@v1
@@ -119,6 +120,10 @@ jobs:
         override: true
         target: ${{ matrix.target }}
 
+    - name: Add cargo-wix subcommand
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      run: cargo install cargo-wix
+
     - name: Use Cross
       shell: bash
       run: |
@@ -173,6 +178,14 @@ jobs:
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
 
+    - name: Create msi with wix
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      shell: bash
+      run: |
+        installer="ripgrep-${{ needs.create-release.outputs.rg_version }}-${{ matrix.target }}.msi"
+        ${{ env.CARGO }} wix --no-build --nocapture --output "$installer" -C"-dTarget=${{ matrix.target }}"
+        echo "ASSET_INSTALLER=$installer" >> $GITHUB_ENV
+
     - name: Upload release archive
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -181,4 +194,15 @@ jobs:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: ${{ env.ASSET }}
         asset_name: ${{ env.ASSET }}
+        asset_content_type: application/octet-stream
+
+    - name: Upload release msi
+      if: matrix.build == 'win-msvc' || matrix.build == 'win32-msvc'
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ${{ env.ASSET_INSTALLER }}
+        asset_name: ${{ env.ASSET_INSTALLER }}
         asset_content_type: application/octet-stream
